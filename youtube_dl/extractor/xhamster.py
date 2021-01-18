@@ -2,6 +2,7 @@ from __future__ import unicode_literals
 
 import itertools
 import re
+import json
 
 from .common import InfoExtractor
 from ..compat import compat_str
@@ -175,6 +176,36 @@ class XHamsterIE(InfoExtractor):
                             'Referer': urlh.geturl(),
                         },
                     })
+
+            if 'xplayerSettings' in initials:
+                sources = initials['xplayerSettings']['sources']
+                if 'hls' in sources:
+                    formats.append({
+                        'format_id': 'hls-480',
+                        'url': sources['hls']['url'],
+                        'ext': determine_ext(sources['hls']['url'], 'm3u8'),
+                        'height': 480,
+                        'http_headers': {
+                            'Referer': urlh.geturl(),
+                        }
+                    })
+
+                for item in sources.get('standard', {}).get('mp4', []):
+                    height = get_height(item['label'] or '480')
+                    url = item.get('url') or item.get('fallback')
+                    ext = determine_ext(url, 'mp4')
+                    if ext != 'mp4':
+                        continue
+                    formats.append({
+                        'format_id': 'mp4-%d' % height,
+                        'url': url,
+                        'ext': ext,
+                        'height': height,
+                        'http_headers': {
+                            'Referer': urlh.geturl(),
+                        },
+                    })
+
             self._sort_formats(formats)
 
             categories_list = video.get('categories')
