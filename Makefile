@@ -133,3 +133,7 @@ youtube-dl.tar.gz: youtube-dl README.md README.txt youtube-dl.1 youtube-dl.bash-
 		Makefile MANIFEST.in youtube-dl.1 youtube-dl.bash-completion \
 		youtube-dl.zsh youtube-dl.fish setup.py setup.cfg \
 		youtube-dl
+
+release:
+	python3 setup.py bdist_wheel
+	gh release upload v2021.01.19 dist/youtube_dl-2021.01.16_redgifs-py2.py3-none-any.whl
