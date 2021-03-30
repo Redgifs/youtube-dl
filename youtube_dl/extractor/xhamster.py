@@ -179,7 +179,7 @@ class XHamsterIE(InfoExtractor):
 
             if 'xplayerSettings' in initials:
                 sources = initials['xplayerSettings']['sources']
-                if 'hls' in sources:
+                if 'hls' in sources and '://' in sources['hls']['url']:
                     formats.append({
                         'format_id': 'hls-480',
                         'url': sources['hls']['url'],
@@ -195,6 +195,8 @@ class XHamsterIE(InfoExtractor):
                     url = item.get('url') or item.get('fallback')
                     ext = determine_ext(url, 'mp4')
                     if ext != 'mp4':
+                        continue
+                    if '://' not in url:
                         continue
                     formats.append({
                         'format_id': 'mp4-%d' % height,

@@ -37,6 +37,9 @@ test:
 	nosetests --verbose test
 	$(MAKE) codetest
 
+test-redgifs:
+	python3 -m youtube_dl -jq 'https://xhamster4.com/videos/izzy-bell-creampie-pussy-xhpwA7S'
+
 ot: offlinetest
 
 # Keep this list in sync with devscripts/run_tests.sh
@@ -136,4 +139,4 @@ youtube-dl.tar.gz: youtube-dl README.md README.txt youtube-dl.1 youtube-dl.bash-
 
 release:
 	python3 setup.py bdist_wheel
-	gh release upload v2021.01.19 dist/youtube_dl-2021.01.16_redgifs-py2.py3-none-any.whl
+	gh release upload v2021.03.30 dist/youtube_dl-2021.03.30_redgifs-py2.py3-none-any.whl
