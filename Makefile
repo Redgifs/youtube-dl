@@ -37,6 +37,9 @@ test:
 	nosetests --verbose test
 	$(MAKE) codetest
 
+test-redgifs:
+	python3 -m youtube_dl -jq 'https://xhamster4.com/videos/izzy-bell-creampie-pussy-xhpwA7S'
+
 ot: offlinetest
 
 # Keep this list in sync with devscripts/run_tests.sh
