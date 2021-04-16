@@ -1,3 +1,5 @@
+VERSION = $(shell git rev-parse --short HEAD)
+
 all: youtube-dl README.md CONTRIBUTING.md README.txt youtube-dl.1 youtube-dl.bash-completion youtube-dl.zsh youtube-dl.fish supportedsites
 
 clean:
@@ -138,5 +140,6 @@ youtube-dl.tar.gz: youtube-dl README.md README.txt youtube-dl.1 youtube-dl.bash-
 		youtube-dl
 
 release:
-	python3 setup.py bdist_wheel
-	gh release upload v2021.03.30 dist/youtube_dl-2021.03.30_redgifs-py2.py3-none-any.whl
+	VERSION=$(VERSION)_redgifs python3 setup.py bdist_wheel
+	gh release create rel-$(VERSION) --title "Incremental release" --notes "Fixes to extractors, probably."
+	gh release upload rel-$(VERSION) dist/youtube_dl-$(VERSION)_redgifs-py2.py3-none-any.whl
