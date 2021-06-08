@@ -76,6 +76,12 @@ class YouPornIE(InfoExtractor):
         video_id = mobj.group('id')
         display_id = mobj.group('display_id') or video_id
 
+        meta_url = 'https://www.youporn.com/api/video/media_definitions/%s/' % video_id
+        raw_meta = self._download_webpage(meta_url, display_id,
+            headers={'Cookie': 'age_verified=1'})
+
+        meta = self._parse_json(raw_meta, video_id, fatal=True)
+
         webpage = self._download_webpage(
             'http://www.youporn.com/watch/%s' % video_id, display_id,
             headers={'Cookie': 'age_verified=1'})
@@ -86,64 +92,7 @@ class YouPornIE(InfoExtractor):
             webpage, default=None) or self._html_search_meta(
             'title', webpage, fatal=True)
 
-        links = []
-
-        # Main source
-        definitions = self._parse_json(
-            self._search_regex(
-                r'mediaDefinition\s*[=:]\s*(\[.+?\])\s*[;,]', webpage,
-                'media definitions', default='[]'),
-            video_id, fatal=False)
-        if definitions:
-            for definition in definitions:
-                if not isinstance(definition, dict):
-                    continue
-                video_url = url_or_none(definition.get('videoUrl'))
-                if video_url:
-                    links.append(video_url)
-
-        # Fallback #1, this also contains extra low quality 180p format
-        for _, link in re.findall(r'<a[^>]+href=(["\'])(http(?:(?!\1).)+\.mp4(?:(?!\1).)*)\1[^>]+title=["\']Download [Vv]ideo', webpage):
-            links.append(link)
-
-        # Fallback #2 (unavailable as at 22.06.2017)
-        sources = self._search_regex(
-            r'(?s)sources\s*:\s*({.+?})', webpage, 'sources', default=None)
-        if sources:
-            for _, link in re.findall(r'[^:]+\s*:\s*(["\'])(http.+?)\1', sources):
-                links.append(link)
-
-        # Fallback #3 (unavailable as at 22.06.2017)
-        for _, link in re.findall(
-                r'(?:videoSrc|videoIpadUrl|html5PlayerSrc)\s*[:=]\s*(["\'])(http.+?)\1', webpage):
-            links.append(link)
-
-        # Fallback #4, encrypted links (unavailable as at 22.06.2017)
-        for _, encrypted_link in re.findall(
-                r'encryptedQuality\d{3,4}URL\s*=\s*(["\'])([\da-zA-Z+/=]+)\1', webpage):
-            links.append(aes_decrypt_text(encrypted_link, title, 32).decode('utf-8'))
-
-        formats = []
-        for video_url in set(unescapeHTML(link) for link in links):
-            f = {
-                'url': video_url,
-            }
-            # Video URL's path looks like this:
-            #  /201012/17/505835/720p_1500k_505835/YouPorn%20-%20Sex%20Ed%20Is%20It%20Safe%20To%20Masturbate%20Daily.mp4
-            #  /201012/17/505835/vl_240p_240k_505835/YouPorn%20-%20Sex%20Ed%20Is%20It%20Safe%20To%20Masturbate%20Daily.mp4
-            #  /videos/201703/11/109285532/1080P_4000K_109285532.mp4
-            # We will benefit from it by extracting some metadata
-            mobj = re.search(r'(?P<height>\d{3,4})[pP]_(?P<bitrate>\d+)[kK]_\d+', video_url)
-            if mobj:
-                height = int(mobj.group('height'))
-                bitrate = int(mobj.group('bitrate'))
-                f.update({
-                    'format_id': '%dp-%dk' % (height, bitrate),
-                    'height': height,
-                    'tbr': bitrate,
-                })
-            formats.append(f)
-        self._sort_formats(formats)
+        formats = self._get_formats(meta)
 
         description = self._html_search_regex(
             r'(?s)<div[^>]+\bid=["\']description["\'][^>]*>(.+?)</div>',
@@ -204,3 +153,26 @@ class YouPornIE(InfoExtractor):
             'age_limit': age_limit,
             'formats': formats,
         }
+
+    def _get_formats(self, meta):
+        formats = []
+
+        for item in meta:
+            format = {
+                'url': item['videoUrl'],
+                'format_id': '%s-%s' % (item['quality'], item['codec']),
+                'height': int(item['quality']),
+            }
+
+            mobj = re.search(r'(?P<height>\d{3,4})[pP]_(?P<bitrate>\d+)[kK]_\d+', item['videoUrl'])
+            if mobj:
+                height = int(mobj.group('height'))
+                bitrate = int(mobj.group('bitrate'))
+                format.update({
+                    'height': height,
+                    'tbr': bitrate,
+                })
+
+            formats.append(format)
+
+        return formats
